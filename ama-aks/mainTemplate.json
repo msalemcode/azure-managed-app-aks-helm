@@ -31,7 +31,7 @@
     },
     "crossTenant": {
       "type": "bool",
-      "defaultValue": false,
+      "defaultValue": true,
       "metadata": {
         "description": "Manually set flag whether to use delegatedManagedIdentityResourceId or not in role assignments"
       }
@@ -47,7 +47,6 @@
     "adminUsername": "[concat('azureuser')]",
     "sshPublicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDR3ELgvUalTKRVAPNoYEDyecX9QH4rTgPwWFuQ+b33/BBZDTGVwJtAZwCqASaGvc7Bmb3d4q/1Cyd7MHGV1rBD/UJvf4TfyVzQDk0q0DqV2oovlUI2CL9EOIGqN2c0Z4g6GvaPnMMwKSKpc2m4UiJgXPQcH2lwb7PDxrpTJTgP8F3iVX8yvH+zxw5KgN4K3K1D9K17OICo6vcaP2HB/cKRxQoDTEEBQAsglzeoXGzkP4yMwwV2uG4GhuG1urR8ZGKSfDohi67h2pgYLiRjQQ9LTRHTemCqreBIuyEOSPJNwrsIoS5xNqkdzeMzTr+1pL126c8cRgG8ENe7Qvrbqx3cVXK1Ezec4yYk1pCiGxu5x4P9WYmWcvjp/p1HZ3tuZyGYRAUx0KTqkm/TQJxxzWBoUTF6b6MNwIM6qW5N9NM7Q6nEghSWjZXaN/FXTN5OxVV5ygKUz2W5S5q8W3ySBKIec2Ee6M9kdFGzU6Qv9mGYpKU7/Ys2jBxYftQxw/fh2UoXRN69wwP+j4reAAbSJnlfFu6T5wUtlNEJAR5vYm6ek45FXeVzpU4nhzJqjdnrhsF7FSeSV/HXx1tl043me3X/qbB2nKF96T6kZLrAbzQUmecExahBIGJCLMbexMcFuii4nPz1wP0X2pT8EI2rfC8oSoxnf9SNHEcNHm6gB4RA5w== masalem@DESKTOP-S24FNT7",
     "logAnalyticsWorkspaceName": "[concat(parameters('aksName'),uniqueString(resourceGroup().id))]",
-    "acrName": "[concat(parameters('aksName'),'acr')]",
     "identityName": "[concat(parameters('aksName'),'-identity')]",
     "nodeResourceGroup": "[concat(resourceGroup().name,'-aks-rg')]",
     "roleDefinitionOwner": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
@@ -327,53 +326,6 @@
       }
     },
     {
-      "type": "Microsoft.ContainerRegistry/registries",
-      "apiVersion": "2019-12-01-preview",
-      "name": "[variables('acrName')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "Container Registry",
-        "container.registry": "[variables('acrName')]"
-      },
-      "sku": {
-        "name": "basic"
-      },
-      "properties": {
-        "adminUserEnabled": true
-      }
-    },
-    {
-            "name": "ConnectAKStoACR-a8ef7952-3915-4c94-a530-0d3f0a26a03a",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
-
-            "dependsOn": [
-                "[parameters('aksName')]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "resources": [
-                        {
-                            "apiVersion": "2018-09-01-preview",
-                            "type": "Microsoft.ContainerRegistry/registries/providers/roleAssignments",
-                            "name": "[concat(variables('acrName'), '/Microsoft.Authorization/', parameters('guidValue'))]",
-                            "properties": {
-                                "principalId": "[reference(parameters('aksName'), '2021-07-01').identityProfile.kubeletidentity.objectId]",
-                                "principalType": "ServicePrincipal",
-                                "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
-                                "scope": "[resourceId(ResourceGroup().name,'Microsoft.ContainerRegistry/registries/', variables('acrName'))]"
-                            }
-                        }
-                    ]
-                }
-            }
-    },
-
-
-    {
       "comments": "*** After creating the AKS resource, Import Images ***",
       "type": "Microsoft.Resources/deploymentScripts",
       "apiVersion": "2020-10-01",
@@ -388,12 +340,11 @@
       "kind": "AzureCLI",
       "dependsOn": [
         "[parameters('aksName')]",
-        "sleep-after-aks",
-        "[variables('acrName')]"
+        "sleep-after-aks"
       ],
       "properties": {
         "azCliVersion": "2.32.0",
-        "scriptContent": "[concat('az login --identity; az acr import --name ', variables('acrName'), ' --source  ISV-ACR.azurecr.io/nodejstodo:v3 --image nodejstodo:v3  -u ISV-ACR -p ISV-ACR-PASSWORD  ; az acr import --name ', variables('acrName'), ' --source  ISV-ACR.azurecr.io/mongo:latest --image mongo:latest  -u ISV-ACR -p ISV-ACR-PASSWORD')]",
+"scriptContent": "[concat('az login --identity; az aks get-credentials --resource-group ',resourceGroup().name ,' --name ',parameters('aksName') ,' --admin;  az aks command invoke --resource-group ',resourceGroup().name ,' --name ',parameters('aksName') ,'  --command  \"kubectl create secret docker-registry regcred --namespace default --docker-server=<ACR NAME SERVER>  --docker-username=<ACR ADMIN> --docker-password= <ACR PASSWORD> \"')]",        
         "cleanupPreference": "OnSuccess",
         "retentionInterval": "PT4H",
         "timeout": "PT2H"
@@ -416,13 +367,12 @@
       "dependsOn": [
         "[parameters('aksName')]",
         "sleep-after-aks",
-        "ImportContainerImages",
-        "[variables('acrName')]"
+        "ImportContainerImages"
 
       ],
       "properties": {
         "azCliVersion": "2.32.0",
-        "scriptContent": "[concat('cp ./helm /usr/local/bin/helm;unzip helmchart.zip -d akshelm;az aks get-credentials --resource-group ',resourceGroup().name ,' --name ',parameters('aksName') ,' --admin; helm install todoapp --set-string frontendImage=',variables('acrName'),'.azurecr.io/nodejstodo:v3 --set-string backendImage=',variables('acrName'),'.azurecr.io/mongo:latest ./akshelm')]",
+        "scriptContent": "[concat('cp ./helm /usr/local/bin/helm;unzip helmchart.zip -d akshelm;az aks get-credentials --resource-group ',resourceGroup().name ,' --name ',parameters('aksName') ,' --admin; helm install todoapp ./akshelm')]",
         "supportingScriptUris":[
                   "[variables('helmLocation')]",
                   "[variables('installHelmLocation')]"

@@ -1,7 +1,7 @@
 # Azure Vote UI control
 title: Azure ToDo App
-frontendImage: docker.io/magdysalem/nodejstodo:v3
-backendImage: docker.io/mongo:latest
+frontendImage: magdysalem.azurecr.io/nodejstodo:v3
+backendImage: magdysalem.azurecr.io/mongo:latest
 # MongoDB Admin
 mongoDBAdmin: mongoadmin
 mongoDBPassword: secret
