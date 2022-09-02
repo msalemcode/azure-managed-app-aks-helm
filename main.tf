@@ -12,17 +12,13 @@ terraform {
   }
 }
 
-data "azurerm_subscription" "current" {}
-
-
-
 resource "azurerm_resource_group" "rg" {
   name = "msalem_arm_terraform_test"
   location= "eastus"
 }
 
 resource "azurerm_storage_account" "example" {
-  name                     = "msalemarmstorage"
+  name                     = "salemmsstorage202209"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
