@@ -17,8 +17,8 @@ data "azurerm_subscription" "current" {}
 
 
 resource "azurerm_resource_group" "rg" {
-  name = msalem_arm_terraform
-  location= eastus
+  name = "msalem_arm_terraform"
+  location= "eastus"
 }
 
 resource "azurerm_storage_account" "example" {
