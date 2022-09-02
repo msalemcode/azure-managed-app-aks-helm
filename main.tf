@@ -1,14 +1,15 @@
 provider "azurerm" {
-version = "~> 2.6.0"
 features {}
 }
 
 
 terraform {
-  
-  required_version = ">= 1.3.0"
-  # Backend variables are initialized by Azure DevOps
-  backend "azurerm" {}
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
 }
 
 data "azurerm_subscription" "current" {}
